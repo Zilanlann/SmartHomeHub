@@ -1,5 +1,7 @@
-import serial
 import threading
+
+import serial
+
 
 class ComClass:
     def __init__(self, port, baud):
@@ -49,6 +51,7 @@ class ComClass:
                 if receive_data:
                     print('接收数据：%s' % receive_data)
 
+
 if __name__ == '__main__':
-    ser = ComClass('COM3', 9600)
+    ser = ComClass('COM9', 9600)
     ser.start_threads()
