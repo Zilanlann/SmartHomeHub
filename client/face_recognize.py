@@ -5,7 +5,7 @@ from PyQt6.QtCore import QThread, pyqtSignal, QMutex, QWaitCondition, QMutexLock
 
 
 class FaceThread(QThread):
-    """子线程，用于持续检测IC卡"""
+    """人脸识别子线程"""
     isOwner = pyqtSignal(int)
 
     def __init__(self, parent=None):
