@@ -163,3 +163,4 @@ cc2530/Debug
 
 images/*
 face_recognition_models/
+.DS_Store
