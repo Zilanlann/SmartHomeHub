@@ -27,12 +27,17 @@ def run_face_recognition():
     zyh_image = face_recognition.load_image_file("images/zyh.jpg")
     zyh_face_encoding = face_recognition.face_encodings(zyh_image)[0]
 
+    dy_image = face_recognition.load_image_file("images/dy.jpg")
+    dy_face_encoding = face_recognition.face_encodings(dy_image)[0]
+
     # Create arrays of known face encodings and their names
     known_face_encodings = [
         zyh_face_encoding,
+        dy_face_encoding,
     ]
     known_face_names = [
         "Yuhao Zhao",
+        "Yun Day",
     ]
 
     # Initialize some variables
@@ -63,7 +68,7 @@ def run_face_recognition():
             face_names = []
             for face_encoding in face_encodings:
                 # See if the face is a match for the known face(s)
-                matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+                matches = face_recognition.compare_faces(known_face_encodings, face_encoding, 0.45)
                 name = "Unknown"
 
                 # # If a match was found in known_face_encodings, just use the first one.
