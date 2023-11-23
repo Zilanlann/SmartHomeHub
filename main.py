@@ -7,7 +7,6 @@ class Example(QWidget):
     def __init__(self):
         super().__init__()
 
-
         self.initUI()
 
     def initUI(self):
@@ -19,7 +18,9 @@ class Example(QWidget):
     def closeEvent(self, event):
 
         reply = QMessageBox.question(self, 'Message',
-                    "Are you sure to quit?", QMessageBox.StandardButton.No | QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
+                                     "Are you sure to quit?",
+                                     QMessageBox.StandardButton.No | QMessageBox.StandardButton.Yes,
+                                     QMessageBox.StandardButton.No)
 
         if reply == QMessageBox.StandardButton.Yes:
             event.accept()
