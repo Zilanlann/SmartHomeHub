@@ -16,6 +16,7 @@ class FaceThread(QThread):
         self.timeout = 100  # 设定超时时间
 
     def run(self):
+        flag = True
         video_capture = cv2.VideoCapture(0)
 
         # Load sample pictures and learn how to recognize them
@@ -42,13 +43,15 @@ class FaceThread(QThread):
                 recognition_result = self.process_frame(frame, known_face_encodings, known_face_names)
                 if recognition_result == 1:
                     self.isOwner.emit(1)
+                    flag = False
                     break
 
             process_this_frame = not process_this_frame
 
+        if flag:
+            self.isOwner.emit(0)
         video_capture.release()
         cv2.destroyAllWindows()
-        self.isOwner.emit(0)
 
     def process_frame(self, frame, known_face_encodings, known_face_names):
         """ Process a single frame for face recognition """
