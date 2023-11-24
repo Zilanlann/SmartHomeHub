@@ -42,10 +42,10 @@ class MainWindow(QMainWindow):
         self.face_recognition_button.clicked.connect(self.face_recognition)
         layout.addWidget(self.face_recognition_button)
 
-        # 关灯睡觉按钮
-        self.sleep_button = QPushButton('关灯睡觉')
-        self.sleep_button.clicked.connect(self.set_sleep_time)
-        layout.addWidget(self.sleep_button)
+        # # 关灯睡觉按钮
+        # self.sleep_button = QPushButton('关灯睡觉')
+        # self.sleep_button.clicked.connect(self.set_sleep_time)
+        # layout.addWidget(self.sleep_button)
 
     def change_password(self):
         QMessageBox.information(self, '修改密码', '这里是修改密码的功能')
