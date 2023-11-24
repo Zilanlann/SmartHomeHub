@@ -40,9 +40,8 @@ def handle_client(client_socket):
                     # 调用获取温湿度平均值的函数
                     str_hour, str_temperature, str_humidity = get_average_temperature_humidity(cursor)
                     # 将结果发送回客户端
-                    client_socket.send(str_hour.encode('utf-8'))
-                    client_socket.send(str_temperature.encode('utf-8'))
-                    client_socket.send(str_humidity.encode('utf-8'))
+                    combined_str = f"{str_hour}|{str_temperature}|{str_humidity}"
+                    client_socket.send(combined_str.encode('utf-8'))
                 except Exception as e:
                     print(f"处理获取温湿度平均值请求时出错: {e}")
                     client_socket.send("获取温湿度平均值处理错误".encode('utf-8'))
