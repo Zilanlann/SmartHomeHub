@@ -4,9 +4,8 @@ from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButto
 
 from client import ClientThread
 
-from time import sleep
-
 from main_window import MainWindow
+
 
 class LoginWindow(QWidget):
     def __init__(self):
@@ -49,7 +48,9 @@ class LoginWindow(QWidget):
         # 处理接收到的消息
         result = int(message)
         if result == 1:
-            QMessageBox.information(self, '提示', '登录成功！')
+            self.main_window = MainWindow()  # 创建MainWindow实例
+            self.main_window.show()  # 显示MainWindow
+            self.close()  # 关闭当前登录窗口
         elif result == 0:
             QMessageBox.warning(self, '错误', '密码错误！')
         else:
