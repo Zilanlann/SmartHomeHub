@@ -2,10 +2,13 @@ import sys
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QMessageBox, QLabel, \
-    QTimeEdit, QDialog, QDialogButtonBox
+    QDialog
 
-from client import ClientThread
 from change_pass import ChangePasswordDialog
+from client import ClientThread
+from face_recognize import FaceThread
+from link_serial import SerialThread
+from th_graph import PlotWindow
 
 
 class MainWindow(QMainWindow):
@@ -16,6 +19,10 @@ class MainWindow(QMainWindow):
         self.client_thread = ClientThread()
         self.client_thread.start()
         self.client_thread.received_message.connect(self.switchFunc)
+        self.face_thread = FaceThread()
+        self.face_thread.isOwner.connect(self.checkFace)
+        self.serial_thread = SerialThread('COM9', 9600)
+        self.serial_thread.received_data_signal.connect(self.sendTemp)
 
     def initUI(self):
         self.setWindowTitle('智能家居管理系统')
@@ -40,7 +47,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.change_password_button)
 
         # 查看当天温湿度曲线按钮
-        self.view_temp_humidity_button = QPushButton('查看当天温湿度曲线')
+        self.view_temp_humidity_button = QPushButton('查看24小时温湿度曲线')
         self.view_temp_humidity_button.clicked.connect(self.view_temp_humidity)
         layout.addWidget(self.view_temp_humidity_button)
 
@@ -63,6 +70,18 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, '错误', '旧密码错误！')
             else:
                 QMessageBox.warning(self, '错误', '用户不存在！')
+        elif self.status == 2:
+            self.plot_window = PlotWindow(message)
+            self.plot_window.show()
+
+    def sendTemp(self, message):
+        self.client_thread.send(message)
+
+    def checkFace(self, result):
+        if result == 1:
+            QMessageBox.information(self, '提示', "门已开，欢迎回家！")
+        else:
+            QMessageBox.warning(self, '错误', '人脸识别失败')
 
     def change_password(self):
         self.status = 1
@@ -73,11 +92,11 @@ class MainWindow(QMainWindow):
 
     def view_temp_humidity(self):
         self.status = 2
-        QMessageBox.information(self, '温湿度曲线', '这里是查看当天温湿度曲线的功能')
+        self.client_thread.send("getTH")
 
     def face_recognition(self):
         self.status = 3
-        QMessageBox.information(self, '人脸识别门禁', '这里是人脸识别门禁的功能')
+        self.face_thread.start()
 
 
 def main():
