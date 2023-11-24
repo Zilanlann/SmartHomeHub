@@ -63,7 +63,7 @@ def authenticate_user(cursor, username, password):
 def change_password(db, cursor, username, old_password, new_password):
     """修改用户密码"""
     # 验证用户身份
-    result = authenticate_user(username, old_password)
+    result = authenticate_user(cursor, username, old_password)
     if result == 1:
         # 更新密码
         update_sql = "UPDATE users SET password=AES_ENCRYPT(%s, 'usee111') WHERE username=%s"
