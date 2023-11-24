@@ -1,7 +1,10 @@
+import sys
+
 import cv2
 import face_recognition
 import numpy as np
-from PyQt6.QtCore import QThread, pyqtSignal, QMutex, QWaitCondition, QMutexLocker
+from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtWidgets import QApplication
 
 
 class FaceThread(QThread):
@@ -10,113 +13,64 @@ class FaceThread(QThread):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-        self.mutex = QMutex()  # 互斥锁，用于线程同步
+        self.timeout = 100  # 设定超时时间
 
     def run(self):
-        with QMutexLocker(self.mutex):
-            self.isOwner = run_face_recognition()
+        video_capture = cv2.VideoCapture(0)
 
+        # Load sample pictures and learn how to recognize them
+        zyh_image = face_recognition.load_image_file("../images/zyh.jpg")
+        zyh_face_encoding = face_recognition.face_encodings(zyh_image)[0]
 
-def run_face_recognition():
-    """启动人脸识别"""
-    timeout = 100
-    # Get a reference to webcam #0 (the default one)
-    video_capture = cv2.VideoCapture(0)
+        dy_image = face_recognition.load_image_file("../images/dy.jpg")
+        dy_face_encoding = face_recognition.face_encodings(dy_image)[0]
 
-    # Load a sample picture and learn how to recognize it.
-    zyh_image = face_recognition.load_image_file("../images/zyh.jpg")
-    zyh_face_encoding = face_recognition.face_encodings(zyh_image)[0]
+        # Arrays of known face encodings and their names
+        known_face_encodings = [zyh_face_encoding, dy_face_encoding]
+        known_face_names = ["Yuhao Zhao", "Yun Day"]
 
-    dy_image = face_recognition.load_image_file("../images/dy.jpg")
-    dy_face_encoding = face_recognition.face_encodings(dy_image)[0]
+        process_this_frame = True
 
-    # Create arrays of known face encodings and their names
-    known_face_encodings = [
-        zyh_face_encoding,
-        dy_face_encoding,
-    ]
-    known_face_names = [
-        "Yuhao Zhao",
-        "Yun Day",
-    ]
+        while self.timeout and video_capture.isOpened():
+            self.timeout -= 1
+            ret, frame = video_capture.read()
+            if not ret:
+                break
 
-    # Initialize some variables
-    face_locations = []
-    face_encodings = []
-    face_names = []
-    process_this_frame = True
+            if process_this_frame:
+                # Face recognition logic
+                recognition_result = self.process_frame(frame, known_face_encodings, known_face_names)
+                if recognition_result == 1:
+                    self.isOwner.emit(1)
+                    break
 
-    while timeout:
-        timeout -= 1
-        print(timeout)
-        # Grab a single frame of video
-        ret, frame = video_capture.read()
+            process_this_frame = not process_this_frame
 
-        # Only process every other frame of video to save time
-        if process_this_frame:
-            # Resize frame of video to 1/4 size for faster face recognition processing
-            small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+        video_capture.release()
+        cv2.destroyAllWindows()
+        self.isOwner.emit(0)
 
-            # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-            code = cv2.COLOR_BGR2RGB
-            rgb_small_frame = cv2.cvtColor(small_frame, code)
+    def process_frame(self, frame, known_face_encodings, known_face_names):
+        """ Process a single frame for face recognition """
+        small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+        rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
 
-            # Find all the faces and face encodings in the current frame of video
-            face_locations = face_recognition.face_locations(rgb_small_frame)
-            face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+        face_locations = face_recognition.face_locations(rgb_small_frame)
+        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
-            face_names = []
-            for face_encoding in face_encodings:
-                # See if the face is a match for the known face(s)
-                matches = face_recognition.compare_faces(known_face_encodings, face_encoding, 0.45)
-                name = "Unknown"
+        for face_encoding in face_encodings:
+            matches = face_recognition.compare_faces(known_face_encodings, face_encoding, 0.45)
+            face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+            best_match_index = np.argmin(face_distances)
+            if matches[best_match_index]:
+                return 1  # Known face detected
 
-                # # If a match was found in known_face_encodings, just use the first one.
-                # if True in matches:
-                #     first_match_index = matches.index(True)
-                #     name = known_face_names[first_match_index]
-
-                # Or instead, use the known face with the smallest distance to the new face
-                face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-                best_match_index = np.argmin(face_distances)
-                if matches[best_match_index]:
-                    name = known_face_names[best_match_index]
-                    video_capture.release()
-                    cv2.destroyAllWindows()
-                    return 1
-
-                face_names.append(name)
-
-        process_this_frame = not process_this_frame
-
-        # Display the results
-        for (top, right, bottom, left), name in zip(face_locations, face_names):
-            # Scale back up face locations since the frame we detected in was scaled to 1/4 size
-            top *= 4
-            right *= 4
-            bottom *= 4
-            left *= 4
-
-            # Draw a box around the face
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-
-            # Draw a label with a name below the face
-            cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
-            font = cv2.FONT_HERSHEY_DUPLEX
-            cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
-
-        # Display the resulting image
-        cv2.imshow('Video', frame)
-
-        # Hit 'q' on the keyboard to quit!
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    # Release handle to the webcam
-    video_capture.release()
-    cv2.destroyAllWindows()
-    return 0
+        return 0  # No known faces detected
 
 
 if __name__ == '__main__':
-    print(run_face_recognition())
+    app = QApplication(sys.argv)  # 创建 QApplication 实例
+    face_thread = FaceThread()
+    face_thread.isOwner.connect(lambda owner: print(f"Owner detected: {owner}"))
+    face_thread.start()
+    sys.exit(app.exec())  # 启动事件循环
