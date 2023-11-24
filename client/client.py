@@ -1,7 +1,8 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTextEdit, QLineEdit, QPushButton, QVBoxLayout, QWidget
-from PyQt6.QtCore import QThread, pyqtSignal
 import socket
 import sys
+
+from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTextEdit, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
 
 class ClientThread(QThread):
@@ -50,6 +51,7 @@ class ClientWindow(QMainWindow):
         self.textEdit.setReadOnly(True)
         self.lineEdit = QLineEdit()
         self.pushButton = QPushButton("发送")
+
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.textEdit)
         self.layout.addWidget(self.lineEdit)
@@ -69,6 +71,7 @@ class ClientWindow(QMainWindow):
     def closeEvent(self, event):
         self.client_thread.clean_up()
         event.accept()
+
     def send_message(self):
         message = self.lineEdit.text()
         self.client_thread.send(message)
