@@ -4,11 +4,18 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QMessageBox, QLabel, \
     QTimeEdit, QDialog, QDialogButtonBox
 
+from client import ClientThread
+from change_pass import ChangePasswordDialog
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.status = 0
+        self.client_thread = ClientThread()
+        self.client_thread.start()
+        self.client_thread.received_message.connect(self.switchFunc)
 
     def initUI(self):
         self.setWindowTitle('智能家居管理系统')
@@ -42,42 +49,35 @@ class MainWindow(QMainWindow):
         self.face_recognition_button.clicked.connect(self.face_recognition)
         layout.addWidget(self.face_recognition_button)
 
-        # # 关灯睡觉按钮
-        # self.sleep_button = QPushButton('关灯睡觉')
-        # self.sleep_button.clicked.connect(self.set_sleep_time)
-        # layout.addWidget(self.sleep_button)
+    def closeEvent(self, event):
+        self.client_thread.clean_up()
+        event.accept()
+
+    def switchFunc(self, message):
+        # 处理接收到的消息
+        if self.status == 1:
+            result = int(message)
+            if result == 1:
+                QMessageBox.information(self, '提示', "密码修改成功")
+            elif result == 0:
+                QMessageBox.warning(self, '错误', '旧密码错误！')
+            else:
+                QMessageBox.warning(self, '错误', '用户不存在！')
 
     def change_password(self):
-        QMessageBox.information(self, '修改密码', '这里是修改密码的功能')
+        self.status = 1
+        dialog = ChangePasswordDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            username, old_password, new_password = dialog.get_inputs()
+            self.client_thread.send("changePassword:" + username + "," + old_password + "," + new_password)
 
     def view_temp_humidity(self):
+        self.status = 2
         QMessageBox.information(self, '温湿度曲线', '这里是查看当天温湿度曲线的功能')
 
     def face_recognition(self):
+        self.status = 3
         QMessageBox.information(self, '人脸识别门禁', '这里是人脸识别门禁的功能')
-
-    def set_sleep_time(self):
-        # 弹出对话框设置睡觉时间
-        dialog = QDialog(self)
-        dialog.setWindowTitle('设置起床时间')
-
-        dialog_layout = QVBoxLayout()
-
-        self.time_edit = QTimeEdit(dialog)
-        self.time_edit.setDisplayFormat('HH:mm')
-        dialog_layout.addWidget(self.time_edit)
-
-        buttons = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        button_box = QDialogButtonBox(buttons)
-        button_box.accepted.connect(dialog.accept)
-        button_box.rejected.connect(dialog.reject)
-        dialog_layout.addWidget(button_box)
-
-        dialog.setLayout(dialog_layout)
-
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            wakeup_time = self.time_edit.time().toString('HH:mm')
-            QMessageBox.information(self, '设置成功', f'明早起床时间设为 {wakeup_time}')
 
 
 def main():
